@@ -20,6 +20,7 @@ package com.example.android.emojify;
 import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
@@ -30,6 +31,7 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.content.FileProvider;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
@@ -38,11 +40,9 @@ import android.widget.Toast;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
-
-    // TODO (1): Create a Java class called Emojifier
-        // TODO (2): Create a static method in the Emojifier class called detectFaces() which detects and logs the number of faces in a given bitmap.
 
     private static final int REQUEST_IMAGE_CAPTURE = 1;
     private static final int REQUEST_STORAGE_PERMISSION = 1;
@@ -69,12 +69,12 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         // Bind the views
-        mImageView = (ImageView) findViewById(R.id.image_view);
-        mEmojifyButton = (Button) findViewById(R.id.emojify_button);
-        mShareFab = (FloatingActionButton) findViewById(R.id.share_button);
-        mSaveFab = (FloatingActionButton) findViewById(R.id.save_button);
-        mClearFab = (FloatingActionButton) findViewById(R.id.clear_button);
-        mTitleTextView = (TextView) findViewById(R.id.title_text_view);
+        mImageView = findViewById(R.id.image_view);
+        mEmojifyButton = findViewById(R.id.emojify_button);
+        mShareFab = findViewById(R.id.share_button);
+        mSaveFab = findViewById(R.id.save_button);
+        mClearFab = findViewById(R.id.clear_button);
+        mTitleTextView = findViewById(R.id.title_text_view);
     }
 
     /**
@@ -84,7 +84,7 @@ public class MainActivity extends AppCompatActivity {
      */
     public void emojifyMe(View view) {
         // Check for the external storage permission
-        if (ContextCompat.checkSelfPermission(this,
+        /*if (ContextCompat.checkSelfPermission(this,
                 Manifest.permission.WRITE_EXTERNAL_STORAGE)
                 != PackageManager.PERMISSION_GRANTED) {
 
@@ -95,10 +95,11 @@ public class MainActivity extends AppCompatActivity {
         } else {
             // Launch the camera if the permission exists
             launchCamera();
-        }
+        }*/
+        launchCamera();
     }
 
-    @Override
+    /*@Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
             @NonNull int[] grantResults) {
         // Called when you request permission to read and write to external storage
@@ -115,7 +116,7 @@ public class MainActivity extends AppCompatActivity {
                 break;
             }
         }
-    }
+    }*/
 
     /**
      * Creates a temporary image file and captures a picture to store in it.
@@ -146,6 +147,15 @@ public class MainActivity extends AppCompatActivity {
                         FILE_PROVIDER_AUTHORITY,
                         photoFile);
 
+                List<ResolveInfo> resInfoList = getPackageManager().queryIntentActivities(takePictureIntent, PackageManager.MATCH_DEFAULT_ONLY);
+
+                for (ResolveInfo resolveInfo : resInfoList) {
+
+                    String packageName = resolveInfo.activityInfo.packageName;
+                    grantUriPermission(packageName, photoURI, Intent.FLAG_GRANT_WRITE_URI_PERMISSION | Intent.FLAG_GRANT_READ_URI_PERMISSION);
+
+                }
+
                 // Add the URI so the camera can store the image
                 takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoURI);
 
@@ -160,9 +170,11 @@ public class MainActivity extends AppCompatActivity {
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         // If the image capture activity was called and was successful
         if (requestCode == REQUEST_IMAGE_CAPTURE && resultCode == RESULT_OK) {
+            Log.d("log_me", "ok");
             // Process the image and set it to the TextView
             processAndSetImage();
         } else {
+            Log.d("log_me", "not ok");
 
             // Otherwise, delete the temporary image file
             BitmapUtils.deleteImageFile(this, mTempPhotoPath);
@@ -174,6 +186,8 @@ public class MainActivity extends AppCompatActivity {
      */
     private void processAndSetImage() {
 
+        Log.d("log_me", "processAndSetImage");
+
         // Toggle Visibility of the views
         mEmojifyButton.setVisibility(View.GONE);
         mTitleTextView.setVisibility(View.GONE);
@@ -184,7 +198,7 @@ public class MainActivity extends AppCompatActivity {
         // Resample the saved image to fit the ImageView
         mResultsBitmap = BitmapUtils.resamplePic(this, mTempPhotoPath);
 
-        // TODO (3): Call the new detectFaces() method, passing in the resampled bitmap to detect the faces in the picture.
+        Emojifier.detectFaces(this, mResultsBitmap);
 
         // Set the new bitmap to the ImageView
         mImageView.setImageBitmap(mResultsBitmap);
