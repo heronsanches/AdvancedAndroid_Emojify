@@ -178,7 +178,9 @@ public class MainActivity extends AppCompatActivity {
 
             // Otherwise, delete the temporary image file
             BitmapUtils.deleteImageFile(this, mTempPhotoPath);
+            Emojifier.releaseFaceDetector();
         }
+
     }
 
     /**
@@ -202,6 +204,7 @@ public class MainActivity extends AppCompatActivity {
 
         // Set the new bitmap to the ImageView
         mImageView.setImageBitmap(mResultsBitmap);
+        Emojifier.releaseFaceDetector();
     }
 
 
