@@ -17,7 +17,6 @@
 package com.example.android.emojify;
 
 
-import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
@@ -25,10 +24,7 @@ import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore;
-import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
-import android.support.v4.app.ActivityCompat;
-import android.support.v4.content.ContextCompat;
 import android.support.v4.content.FileProvider;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
@@ -36,7 +32,6 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import java.io.File;
 import java.io.IOException;
@@ -77,51 +72,29 @@ public class MainActivity extends AppCompatActivity {
         mTitleTextView = findViewById(R.id.title_text_view);
     }
 
-    /**
-     * OnClick method for "Emojify Me!" Button. Launches the camera app.
-     *
-     * @param view The emojify me button.
-     */
-    public void emojifyMe(View view) {
-        // Check for the external storage permission
-        /*if (ContextCompat.checkSelfPermission(this,
-                Manifest.permission.WRITE_EXTERNAL_STORAGE)
-                != PackageManager.PERMISSION_GRANTED) {
 
-            // If you do not have permission, request it
-            ActivityCompat.requestPermissions(this,
-                    new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
-                    REQUEST_STORAGE_PERMISSION);
-        } else {
-            // Launch the camera if the permission exists
-            launchCamera();
-        }*/
-        launchCamera();
+    @Override
+    protected void onPause() {
+
+        Emojifier.releaseFaceDetector();
+        super.onPause();
+
     }
 
-    /*@Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
-            @NonNull int[] grantResults) {
-        // Called when you request permission to read and write to external storage
-        switch (requestCode) {
-            case REQUEST_STORAGE_PERMISSION: {
-                if (grantResults.length > 0
-                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    // If you get permission, launch the camera
-                    launchCamera();
-                } else {
-                    // If you do not get permission, show a Toast
-                    Toast.makeText(this, R.string.permission_denied, Toast.LENGTH_SHORT).show();
-                }
-                break;
-            }
-        }
-    }*/
+
+    @Override
+    protected void onStop() {
+
+        Emojifier.releaseFaceDetector();
+        super.onStop();
+
+    }
+
 
     /**
      * Creates a temporary image file and captures a picture to store in it.
      */
-    private void launchCamera() {
+    private void emojifyMe() {
 
         // Create the capture image intent
         Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
@@ -183,6 +156,7 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
+
     /**
      * Method for processing the captured image and setting it to the TextView.
      */
@@ -200,11 +174,11 @@ public class MainActivity extends AppCompatActivity {
         // Resample the saved image to fit the ImageView
         mResultsBitmap = BitmapUtils.resamplePic(this, mTempPhotoPath);
 
-        Emojifier.detectFaces(this, mResultsBitmap);
+        mResultsBitmap = Emojifier.detectFacesAndOverlayEmoji(this, mResultsBitmap);
 
         // Set the new bitmap to the ImageView
         mImageView.setImageBitmap(mResultsBitmap);
-        Emojifier.releaseFaceDetector();
+
     }
 
 
@@ -221,6 +195,7 @@ public class MainActivity extends AppCompatActivity {
         BitmapUtils.saveImage(this, mResultsBitmap);
     }
 
+
     /**
      * OnClick method for the share button, saves and shares the new bitmap.
      *
@@ -236,6 +211,7 @@ public class MainActivity extends AppCompatActivity {
         // Share the image
         BitmapUtils.shareImage(this, mTempPhotoPath);
     }
+
 
     /**
      * OnClick for the clear button, resets the app to original state.
@@ -254,4 +230,6 @@ public class MainActivity extends AppCompatActivity {
         // Delete the temporary image file
         BitmapUtils.deleteImageFile(this, mTempPhotoPath);
     }
+
+
 }

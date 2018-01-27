@@ -2,6 +2,8 @@ package com.example.android.emojify;
 
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
 import android.util.Log;
 import android.util.SparseArray;
 
@@ -25,7 +27,7 @@ public final class Emojifier {
     private static Context context;
 
 
-    public static void detectFaces(Context context, Bitmap bm){
+    public static Bitmap detectFacesAndOverlayEmoji(Context context, Bitmap bm){
 
         if(Emojifier.detector == null) {
 
@@ -42,20 +44,29 @@ public final class Emojifier {
         if(!Emojifier.detector.isOperational()){
 
             Log.d("log_me", "!detector.isOperational()");
-            return;
+            return null;
 
         }
 
         Frame frame = new Frame.Builder().setBitmap(bm).build();
         SparseArray<Face> faces = Emojifier.detector.detect(frame);
-        Log.d("log_me", "Number of faces detected: "+faces.size());
 
-        if(faces.size() == 0)
+        if(faces.size() == 0) {
+
             Log.d("log_me", "No faces detected");
+            return bm;
+
+        }
+
+        Bitmap bmOverlay = null;
 
         for (int i = 0; i < faces.size(); ++i) {
 
-            Emojifier.wichEmoji(faces.valueAt(i));
+            bmOverlay = Emojifier.addBitmapToFace( //TODO transform all faces into a unique bitmap
+                bm,
+                Bitmap.createBitmap( BitmapFactory.decodeResource(Emojifier.context.getResources(), Emojifier.wichEmoji(faces.get(i))) ),
+                faces.get(i)
+            );
 
             /*for (Landmark landmark : face.getLandmarks()) {
                 int cx = (int) (landmark.getPosition().x * scale);
@@ -65,11 +76,15 @@ public final class Emojifier {
 
         }
 
+        return bmOverlay;
 
     }
 
 
-    public static void wichEmoji(Face face){
+    public static int wichEmoji(Face face){
+
+        if(face == null)
+            return 0;
 
         Log.d("log_me", "face.getPosition().toString(): "+face.getPosition().toString());
         Log.d("log_me", "face.getIsLeftEyeOpenProbability(): "+face.getIsLeftEyeOpenProbability());
@@ -101,6 +116,7 @@ public final class Emojifier {
 
         Log.d("log_me", "emoji: "+Emojifier.context.getResources().getResourceName(imgSourceId));
 
+        return imgSourceId;
     }
 
 
@@ -115,5 +131,44 @@ public final class Emojifier {
 
     }
 
+
+
+    /**
+     * Combines the original picture with the emoji bitmaps
+     *
+     * @param backgroundBitmap The original picture
+     * @param emojiBitmap      The chosen emoji
+     * @param face             The detected face
+     * @return The final bitmap, including the emojis over the faces
+     */
+    private static Bitmap addBitmapToFace(Bitmap backgroundBitmap, Bitmap emojiBitmap, Face face) {
+
+        // Initialize the results bitmap to be a mutable copy of the original image
+        Bitmap resultBitmap = Bitmap.createBitmap(backgroundBitmap.getWidth(),
+                backgroundBitmap.getHeight(), backgroundBitmap.getConfig());
+
+        // Scale the emoji so it looks better on the face
+        float scaleFactor = 0.7f;
+
+        // Determine the size of the emoji to match the width of the face and preserve aspect ratio
+        int newEmojiWidth = (int) (face.getWidth() * scaleFactor);
+        int newEmojiHeight = (int) (emojiBitmap.getHeight() * newEmojiWidth / emojiBitmap.getWidth() * scaleFactor);
+
+        // Scale the emoji
+        emojiBitmap = Bitmap.createScaledBitmap(emojiBitmap, newEmojiWidth, newEmojiHeight, false);
+
+        // Determine the emoji position so it best lines up with the face
+        float emojiPositionX =
+                (face.getPosition().x + face.getWidth() / 2) - emojiBitmap.getWidth() / 2;
+        float emojiPositionY =
+                (face.getPosition().y + face.getHeight() / 2) - emojiBitmap.getHeight() / 3;
+
+        // Create the canvas and draw the bitmaps to it
+        Canvas canvas = new Canvas(resultBitmap);
+        canvas.drawBitmap(backgroundBitmap, 0, 0, null);
+        canvas.drawBitmap(emojiBitmap, emojiPositionX, emojiPositionY, null);
+
+        return resultBitmap;
+    }
 
 }
