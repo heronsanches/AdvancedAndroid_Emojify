@@ -82,10 +82,7 @@ public final class Emojifier {
 
 
     public static int wichEmoji(Face face){
-
-        if(face == null)
-            return 0;
-
+        
         Log.d("log_me", "face.getPosition().toString(): "+face.getPosition().toString());
         Log.d("log_me", "face.getIsLeftEyeOpenProbability(): "+face.getIsLeftEyeOpenProbability());
         Log.d("log_me", "face.getIsRightEyeOpenProbability(): "+face.getIsRightEyeOpenProbability());
