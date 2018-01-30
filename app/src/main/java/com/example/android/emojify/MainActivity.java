@@ -21,7 +21,9 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.provider.MediaStore;
 import android.support.design.widget.FloatingActionButton;
@@ -40,8 +42,6 @@ import java.util.List;
 public class MainActivity extends AppCompatActivity {
 
     private static final int REQUEST_IMAGE_CAPTURE = 1;
-    private static final int REQUEST_STORAGE_PERMISSION = 1;
-
     private static final String FILE_PROVIDER_AUTHORITY = "com.example.android.fileprovider";
 
     private ImageView mImageView;
@@ -62,7 +62,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
+        Log.d("log_me", getClass().getCanonicalName()+" onCreate");
         // Bind the views
         mImageView = findViewById(R.id.image_view);
         mEmojifyButton = findViewById(R.id.emojify_button);
@@ -74,19 +74,10 @@ public class MainActivity extends AppCompatActivity {
 
 
     @Override
-    protected void onPause() {
+    protected void onDestroy() {
 
+        super.onDestroy();
         Emojifier.releaseFaceDetector();
-        super.onPause();
-
-    }
-
-
-    @Override
-    protected void onStop() {
-
-        Emojifier.releaseFaceDetector();
-        super.onStop();
 
     }
 
@@ -94,7 +85,7 @@ public class MainActivity extends AppCompatActivity {
     /**
      * Creates a temporary image file and captures a picture to store in it.
      */
-    private void emojifyMe() {
+    public void emojifyMe(View view) {
 
         // Create the capture image intent
         Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
@@ -151,7 +142,6 @@ public class MainActivity extends AppCompatActivity {
 
             // Otherwise, delete the temporary image file
             BitmapUtils.deleteImageFile(this, mTempPhotoPath);
-            Emojifier.releaseFaceDetector();
         }
 
     }
@@ -172,7 +162,25 @@ public class MainActivity extends AppCompatActivity {
         mClearFab.setVisibility(View.VISIBLE);
 
         // Resample the saved image to fit the ImageView
-        mResultsBitmap = BitmapUtils.resamplePic(this, mTempPhotoPath);
+        int width = 720;
+        int height = 1280;
+
+        BitmapFactory.Options bmfo = new BitmapFactory.Options();
+        bmfo.inJustDecodeBounds = true;
+        BitmapFactory.decodeFile(mTempPhotoPath, bmfo);
+
+        int imgWidth = bmfo.outWidth;
+        int imgHeight = bmfo.outHeight;
+        int scaleFactor = (int) Math.min(Math.ceil((double)imgWidth/width), Math.ceil((double)imgHeight/height));
+
+        bmfo.inJustDecodeBounds = false;
+        bmfo.inSampleSize = scaleFactor;
+
+        if(Build.VERSION.SDK_INT <= Build.VERSION_CODES.KITKAT)
+            bmfo.inPurgeable = true;
+
+        mResultsBitmap = BitmapFactory.decodeFile(mTempPhotoPath, bmfo);
+        //mResultsBitmap = BitmapUtils.resamplePic(this, mTempPhotoPath);
 
         mResultsBitmap = Emojifier.detectFacesAndOverlayEmoji(this, mResultsBitmap);
 

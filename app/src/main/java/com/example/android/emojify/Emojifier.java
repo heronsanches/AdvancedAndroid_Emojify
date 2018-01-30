@@ -19,7 +19,7 @@ public final class Emojifier {
 
     private static FaceDetector detector;
     private static final double EYES_OPEN_THRESHOLD = 0.71; //TODO search the appropriate
-    private static final double SMILE = 0.59; //TODO search the appropriate
+    private static final double SMILE = 0.35; //TODO search the appropriate
 
     private static boolean isSmile;
     private static boolean isEyeRightOpen;
@@ -29,7 +29,10 @@ public final class Emojifier {
 
     public static Bitmap detectFacesAndOverlayEmoji(Context context, Bitmap bm){
 
-        if(Emojifier.detector == null) {
+        if(Emojifier.detector == null || Emojifier.context != context) {
+
+            Log.d("log_me", "Emojifier.detector == null || Emojifier.context != context");
+
 
             Emojifier.context = context;
 
@@ -58,12 +61,12 @@ public final class Emojifier {
 
         }
 
-        Bitmap bmOverlay = null;
+        Bitmap overlayBitmap = bm;
 
         for (int i = 0; i < faces.size(); ++i) {
 
-            bmOverlay = Emojifier.addBitmapToFace( //TODO transform all faces into a unique bitmap
-                bm,
+            overlayBitmap = Emojifier.addBitmapToFace(
+                overlayBitmap,
                 Bitmap.createBitmap( BitmapFactory.decodeResource(Emojifier.context.getResources(), Emojifier.wichEmoji(faces.get(i))) ),
                 faces.get(i)
             );
@@ -76,13 +79,13 @@ public final class Emojifier {
 
         }
 
-        return bmOverlay;
+        return overlayBitmap;
 
     }
 
 
     public static int wichEmoji(Face face){
-        
+
         Log.d("log_me", "face.getPosition().toString(): "+face.getPosition().toString());
         Log.d("log_me", "face.getIsLeftEyeOpenProbability(): "+face.getIsLeftEyeOpenProbability());
         Log.d("log_me", "face.getIsRightEyeOpenProbability(): "+face.getIsRightEyeOpenProbability());
@@ -141,6 +144,7 @@ public final class Emojifier {
     private static Bitmap addBitmapToFace(Bitmap backgroundBitmap, Bitmap emojiBitmap, Face face) {
 
         // Initialize the results bitmap to be a mutable copy of the original image
+
         Bitmap resultBitmap = Bitmap.createBitmap(backgroundBitmap.getWidth(),
                 backgroundBitmap.getHeight(), backgroundBitmap.getConfig());
 
